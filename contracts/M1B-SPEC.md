@@ -38,6 +38,16 @@ Shifts: 8h weight 100, 16h 175, 24h 200, 48h 200+200. Stress: 8h −5, 16h +15, 
 
 ## 4. `EmploymentRegistry`
 
+> **Superseded for hiring by spec v0.21 §3.2 (2026-09-13).** There is no player application flow any more.
+> A shift accepted by an unemployed Intern–Director carries one hiring attempt (`onShiftAccepted` →
+> `HiringAttempt` keyed by shift id, odds frozen from title and XP); the work registry resolves it with the
+> first entry's cohort seed (`resolveHiring`, `JOB_APPLICATION` domain) before that entry's performance
+> draw. A failed search settles every entry of the shift as **No Work Found** (zero weight, no discipline,
+> one XP). Executives are EMPLOYED from birth with a standing appointment (`defaultJob`), Founder is
+> SELF_EMPLOYED, VC never works. `applyForJob`, `requestApplicationResult`, `cancelApplication` and
+> `appoint` are gone; `hireNow` (shop) remains the paid bypass. XP is lifetime (every completed entry);
+> career credit only while employed. The state and hiring paragraphs below describe the v0.19 design.
+
 **Postings**: `createPosting(employer, tierMask, category) → jobId`, `setPostingActive`. `version` bumps on edit.
 
 **State per character**
