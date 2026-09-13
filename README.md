@@ -759,3 +759,16 @@ V2 extends the office-life economy into property ownership.
 - Explore mortgages, city events and corporate competition in a separate V2 design.
 
 Before property sales or income claims, define ownership, supply, pricing, rent and payment sources, custody, transfers and character retirement. Do not assume unwrap deletes property. Never promise rent from uncreated assets. VC Payroll and executive protection are MVP; property gameplay and separate gacha remain outside launch claims.
+
+## Engineering documents
+
+The `contracts/` folder holds the engineering side of this spec, moved here from the public code repos on 2026-09-13:
+
+| File | What it is |
+|---|---|
+| `contracts/CONFORMANCE.md` | Spec section → contract → built / deviates / deferred, pinned to a spec commit, plus the status of every review finding. |
+| `contracts/M1-SPEC.md` | Milestone one: the reusable "404" pack wrapper, JerkzNFT, rarity catalog, calendar. |
+| `contracts/M1B-SPEC.md` | Milestone 1b: jobs and hiring, shift custody, health, strikes, the career ladder. |
+| `contracts/ENTROPY-SPEC.md` | Switching randomness to Pyth Entropy when it reaches Arc. |
+| `contracts/REVIEW-2026-09-10.md`, `contracts/REVIEW-2026-09-13.md` | Adversarial review reports and the pre-production audit. |
+| `contracts/SPEC.md` | The pre-M1 escrow design (historical). |
