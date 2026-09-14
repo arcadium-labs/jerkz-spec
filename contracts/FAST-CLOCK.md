@@ -1,7 +1,12 @@
 # Fast clock for testnet: minutes instead of hours
 
 Status: PLAN (2026-09-14), not built. Scott: "cut work shifts down to 8 minutes instead of hours
-and any other intervals down to minutes from hours."
+and any other intervals down to minutes from hours." Matches the **"Faster test mode"** row of
+[CHANGELOG.md](../CHANGELOG.md) (2026-09-14, "Approved direction after v0.21; PRD amendment still
+needed"): a separate 60× game-clock profile where 8/16/24/48-hour shifts become 8/16/24/48 minutes,
+one clock applied consistently to starts, cooldowns, weekends and Payroll scheduling, production
+timing unchanged, real network/randomness waits disclosed. Section 6 maps that row's three open
+details (clock anchoring, deployment profile, boundary tests) to this plan.
 
 ## 1. What the clock is today
 
@@ -32,11 +37,12 @@ faucet never touch the calendar.
 
 ## 2. Design: one scale factor, one new contract
 
-**Scale everything by 1/60: an hour becomes a minute.** A game day is 24 minutes, an H8 shift is
-8 minutes, a week is 2 h 48 min, the 2-day re-apply cooldown is 48 minutes, the 7-day stale grace
-is 2 h 48 min. Every relative rule in the spec keeps its ratio, so testnet play exercises the same
-logic mainnet will run. The day length is a deploy parameter, so 8-minute days are one env var away
-if 24 feels slow.
+**Scale everything by 1/60: an hour becomes a minute.** This is the changelog's 60× profile. A game
+day is 24 minutes, an H8 shift is 8 minutes, a week is 2 h 48 min, the 2-day re-apply cooldown is
+48 minutes, the 7-day stale grace is 2 h 48 min. Every relative rule in the spec keeps its ratio, so
+testnet play exercises the same logic mainnet will run. The day length is a deploy parameter for
+flexibility, but anything other than 1,440 s breaks the "8-hour shift = 8 minutes" statement in the
+changelog, so 1,440 s is the profile and other values are for engineering experiments only.
 
 ### 2.1 `src/testnet/FastCalendar.sol` (new, testnet only)
 
@@ -148,7 +154,36 @@ v0.21 rollout avoids a second reset.
 
 ## 5. Open choices for Scott
 
-- 24-minute days (recommended) or 8-minute days.
-- Keep `enrollOpensBefore` at a full fast week (book any published day) or use the spec's 1 hour → 1
-  minute, which is too tight for humans.
+- Keep `enrollOpensBefore` at a full fast week (book any published day, today's testnet rule) or use
+  the spec's 1 hour → 1 minute, which is too tight for humans.
 - Whether to ship this together with spec v0.21 (recommended) or as a separate reset first.
+- Whether AKLO adopts the §7 text as the PRD amendment the changelog says is still needed.
+
+## 6. Alignment with the 2026-09-14 changelog
+
+| changelog requirement | where this plan meets it |
+|---|---|
+| "Separate 60× game-clock profile" | one deploy profile (`FAST_CLOCK=1`, `DAY_SECONDS=1440`) deploying `FastCalendar`; mainnet profile deploys `MarketCalendar` unchanged (§2.1, §2.3) |
+| "8/16/24/48-hour shifts become 8/16/24/48 minutes" | shift length = day/3, 2·day/3, 1 day, 2 days of a 1,440 s day = 8/16/24/48 min (§2.2 item 1) |
+| "Apply one clock consistently to starts, cooldowns, weekends and Payroll scheduling" | every day-keyed rule reads the calendar; the three second-based rules (shift seconds, stale grace, seed-deadline floor) are re-expressed through it; the keeper's publish rule becomes calendar-driven (§2.2, §2.4) |
+| "Keep production timing unchanged" | `MarketCalendarLib`/`MarketCalendar` and the NY fixture untouched; the production tweaks are identities on an 86,400 s day (§2.2) |
+| "Disclose real network/randomness waits" | drand margins (15 s vault, 90 s payroll/gacha) and `PUBLISH_SLACK` do not scale; the UI and `/status` must say "settles about 2 minutes after the day ends (drand)" rather than implying instant settlement; council delay 5 min is a real wait too (§2.3, §2.5) |
+| open: **clock anchoring** | `FastCalendar.genesis` = deploy timestamp rounded down to the minute; `firstDay` chosen so that day is a Monday and ids stay ≥ 20454; a "week" is 7 fast days from that anchor; no DST (fast days are always 24 fast-hours, so the hourly grid a later §4.1 implementation needs is a clean 60 s) (§2.1) |
+| open: **deployment profile** | `DeployR6.s.sol` env: `FAST_CLOCK`, `DAY_SECONDS`, `ENROLL_OPENS_BEFORE`, `PAYROLL_AHEAD_DAYS`, `SEED_DEADLINE`, `MIN_SEED_DEADLINE`; registry gains `calendarKind: "fast" | "ny"` so the keeper and UI switch labels from it, not from a guess (§3) |
+| open: **boundary tests** | `FastCalendar.t.sol` (day edges, `dayIdAt` inverse, weekday anchor, range) plus the whole work/employment/payroll/shop suite run on both calendars through one fixture knob; NY DST-edge tests stay as they are (§2.6) |
+| "Identify all state resets and obtain deployment approval" | §3 step 6 lists the reset; nothing in this document authorises a deployment. The r6 cycle waits for the changelog's acceptance items 1–4 and an explicit go from Scott |
+| "exact `putToWork` interface remains incomplete" | the same r6 cycle is the moment to expose `putToWork` (alias or rename of `enrollShift`) so the fast-clock reset and the v0.21 interface land in one reset |
+
+Not covered here, and not changed by this plan: functional suits (changelog, undecided boost), hourly
+:30 starts and four-hour funding cohorts (existing gap; the fast calendar keeps a 24-slot "hour" grid
+so that work maps onto it later).
+
+## 7. Proposed PRD amendment text (for AKLO, §4.1 or a new §4.6)
+
+> **Test-mode clock profile.** Test deployments may run a 60× clock: the Payroll day is 1,440 s
+> instead of 86,400 s, anchored at a deployment-time Monday boundary, with 24 one-minute start
+> slots and no daylight-saving adjustment. Shift lengths, cooldowns, weekend passes, re-apply delays,
+> stale-entry grace and Payroll publishing horizons are all defined in Payroll days or fractions of
+> one, so they scale with the day. Randomness (drand rounds and margins), admin timelocks and network
+> finality are real-time and are disclosed as such in the app. Production deployments use the New
+> York calendar only; no test-mode parameter exists on production contracts.
