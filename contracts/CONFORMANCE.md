@@ -104,20 +104,27 @@ Verified 34 of 39; #28 and #43 refuted (already fixed by earlier work), #40/#51/
 
 **Retired-source note (#30).** Cancelling an unstarted shift forfeits its pay and XP but keeps the projected stress and used-day marks; reversing them needs per-entry deltas and is deferred.
 
-## v0.21 delta (2026-09-13)
+## v0.21 delta (2026-09-13, deployed as r6 on 2026-09-14)
 
-What changed in the spec and where the code stands. Everything below is in `main` and green; nothing is deployed yet. Deploying needs two cycles: (a) a work/employment/payroll/shop redeploy ("r6"), which resets every Jerk's job, XP and strikes on testnet; (b) a vault redeploy for the fees, which re-mints the collection and resets every character. Both are player-visible resets and wait for Scott's call.
+What changed in the spec and where the code stands. The work/employment/payroll/shop half shipped to Arc
+testnet on 2026-09-14 as **r6**, together with the testnet fast clock (FAST-CLOCK.md, fast-180 profile:
+480 s Payroll days): WorkRegistry v4 `0xA734b9A9d88D1dF6Ea76f28C7d1Dba2c973755FD`, EmploymentRegistry v2
+`0x95FeaB3ccFD74B8999500e311Bc8DB61EBef9B5C`, Payroll v3 `0xF3131019Ef9Bd88c232Df1F06fa984F324647281`,
+ItemShop v3 `0xa5b7Dc7DbA3E80C46f02Be1759294c59066b9295`, FastCalendar `0x1E41e9E3341c86Af5E963c07974e39b3a34AB32F`
+(council-owned; r5 archived). The vault half (Mint/Burn fees) waits for a separate vault cycle.
 
 | Spec change | Code | Status |
 |---|---|---|
-| Mint 1 USDC, Burn 1 USDC, receipts, `redeemNFTs` quote | `core/HybridVault` (`unwrapFee`, `previewRedeem`, `FeeEarned`), `script/DeployM1.s.sol` defaults 1e18/1e18 | built, not deployed |
-| One-action work; hiring inside the shift; `putToWork` | `work/WorkRegistry.enrollShift` + `work/EmploymentRegistry.onShiftAccepted/resolveHiring/abandonHiring` | built, not deployed |
-| Employment status at birth (UNEMPLOYED / EMPLOYED / SELF_EMPLOYED) | `employmentStatus` view; executives auto-bound to `defaultJob` on first work | built |
-| No Work Found outcome | `Entry.noWorkFound`, `NoWorkFound` event, `Award.noWorkFound`, `previewClaim` reason | built |
-| Lifetime XP; XP-adjusted hire and strike odds, frozen at acceptance | `CareerLib.experienceBonusBps/effectiveHireBps/effectiveStrikeBps`; `_applyResults` | built |
+| Mint 1 USDC, Burn 1 USDC, receipts, `redeemNFTs` quote | `core/HybridVault` (`unwrapFee`, `previewRedeem`, `FeeEarned`), `script/DeployM1.s.sol` defaults 1e18/1e18 | built, not deployed (vault cycle pending) |
+| One-action work; hiring inside the shift; `putToWork` | `work/WorkRegistry.putToWork` (alias `enrollShift`) + `work/EmploymentRegistry.onShiftAccepted/resolveHiring/abandonHiring` | deployed r6 |
+| Employment status at birth (UNEMPLOYED / EMPLOYED / SELF_EMPLOYED) | `employmentStatus` view; executives auto-bound to `defaultJob` on first work | deployed r6 |
+| No Work Found outcome | `Entry.noWorkFound`, `NoWorkFound` event, `Award.noWorkFound`, `previewClaim` reason | deployed r6 |
+| Lifetime XP; XP-adjusted hire and strike odds, frozen at acceptance | `CareerLib.experienceBonusBps/effectiveHireBps/effectiveStrikeBps`; `_applyResults` | deployed r6 |
 | Burnout blocks job-search shifts | already the case: the search is a shift | built |
-| Executives keep their standing appointment (no resign) | `resign` reverts `TitleIneligible` for executives | built |
-| JobBoard → Work view, labels (Mint, Burn, Put your Jerk to work, Searching, No Work Found) | jerkz-ui | not started (ABI changes land with the r6 deploy) |
+| Executives keep their standing appointment (no resign) | `resign` reverts `TitleIneligible` for executives | deployed r6 |
+| JobBoard → Work view, labels (Mint, Burn, Put your Jerk to work, Searching, No Work Found) | jerkz-ui branch r6 (Work page: one action, Searching / No Work Found, XP odds; clock-aware labels; drand/timelock disclosure) | built; live once the r6 wiring executes |
 | `HiringAttemptCommitted` / `HiringResolved` events | built | — |
 | Optional hire inside `putToWork`, hourly grid | deferred (two transactions; daily shifts) | — |
-| Hiring randomness no longer a separate draw | `EmploymentRegistry` is no longer a randomness consumer; Entropy budget scripts drop it | built |
+| Hiring randomness no longer a separate draw | `EmploymentRegistry` is no longer a randomness consumer; Entropy budget scripts drop it | deployed r6 |
+| Faster test mode (CHANGELOG 2026-09-14): one compressed clock for starts, cooldowns, weekends, Payroll; production timing unchanged; real waits disclosed | `testnet/FastCalendar` (same ABI as `MarketCalendar`, `daySeconds`); `CareerLib.shiftSeconds(kind, daySeconds)`; `WorkRegistry.STALE_GRACE_DAYS`; `Payroll.MIN_SEED_DEADLINE` immutable; 127 fast-calendar test variants; keeper fast mode; UI clock-aware + disclosure | deployed r6 (fast-180, 480 s days); PRD amendment text in FAST-CLOCK.md §7 awaiting AKLO |
+

@@ -1,6 +1,9 @@
 # Fast clock for testnet: minutes instead of hours
 
-Status: PLAN (2026-09-14), not built. Scott: "cut work shifts down to 8 minutes instead of hours
+Status: BUILT and DEPLOYED to Arc testnet on 2026-09-14 as "r6" with the fast-180 profile (480 s days):
+FastCalendar `0x1E41e9E3341c86Af5E963c07974e39b3a34AB32F`, WorkRegistry v4 `0xA734…55FD`, EmploymentRegistry
+v2 `0x95Fe…9B5C`, Payroll v3 `0xF313…7281`, ItemShop v3 `0xa5b7…9295`; 360 tests (127 of them the work suites
+on the fast calendar). Originally written as the plan; the design below is what shipped. Scott: "cut work shifts down to 8 minutes instead of hours
 and any other intervals down to minutes from hours." Matches the **"Faster test mode"** row of
 [CHANGELOG.md](../CHANGELOG.md) (2026-09-14, "Approved direction after v0.21; PRD amendment still
 needed"): a separate 60× game-clock profile where 8/16/24/48-hour shifts become 8/16/24/48 minutes,
