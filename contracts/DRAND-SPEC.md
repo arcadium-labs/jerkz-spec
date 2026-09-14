@@ -48,3 +48,15 @@ compares every `Selected` round against the request block's time.
 The keeper (private repo `jerkz-keeper`) selects rounds for selected-mode requests from the request block's
 timestamp, fetches published beacons from the relays and posts `fulfill`. Anyone else may post too. There are no
 seeds to keep, no queue to top up, no fee balance.
+
+### Retiring the operator source (status 2026-09-14)
+
+Every live consumer (vault, gacha, Payroll v3) draws from `DrandSource`. The keeper still runs the
+`OperatorCommitReveal` reveal duty for one reason: the retired r4 payroll (`0x4d72…865E`, New York
+calendar) has budgets committed through Sat 2026-09-19 and each of its day seals requests a seed from
+the operator source; the reveal lets the day finalize so the keeper's legacy drain can return the
+reserve to the live payroll. 85 commitments are queued, enough for those seals. After 2026-09-19 the
+reveal sweep, watcher and top-up leave the keeper and the operator source is history. The retired r5
+payroll (`0x9F87…8Dbc`) is a drand consumer with budgets through the same date; its consumer flag
+must stay on until then (council schedule nonce 24, which revokes it, is to be cancelled rather than
+executed).
