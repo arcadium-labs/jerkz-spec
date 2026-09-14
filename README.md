@@ -762,6 +762,8 @@ Before property sales or income claims, define ownership, supply, pricing, rent 
 
 ## Engineering documents
 
+Start with [CHANGELOG.md](CHANGELOG.md) for the initial-v1 comparison, approved changes and pending decisions.
+
 The `contracts/` folder holds the engineering side of this spec, moved here from the public code repos on 2026-09-13:
 
 | File | What it is |
