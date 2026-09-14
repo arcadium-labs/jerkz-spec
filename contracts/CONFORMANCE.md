@@ -128,3 +128,12 @@ ItemShop v3 `0xa5b7Dc7DbA3E80C46f02Be1759294c59066b9295`, FastCalendar `0x1E41e9
 | Hiring randomness no longer a separate draw | `EmploymentRegistry` is no longer a randomness consumer; Entropy budget scripts drop it | deployed r6 |
 | Faster test mode (CHANGELOG 2026-09-14): one compressed clock for starts, cooldowns, weekends, Payroll; production timing unchanged; real waits disclosed | `testnet/FastCalendar` (same ABI as `MarketCalendar`, `daySeconds`); `CareerLib.shiftSeconds(kind, daySeconds)`; `WorkRegistry.STALE_GRACE_DAYS`; `Payroll.MIN_SEED_DEADLINE` immutable; 127 fast-calendar test variants; keeper fast mode; UI clock-aware + disclosure | deployed r6 (fast-180, 480 s days); PRD amendment text in FAST-CLOCK.md §7 awaiting AKLO |
 
+### r6 smoke test (2026-09-14, fast-180 clock)
+
+Fast day 20467 (480 s): CEO #6712 took its standing appointment and Intern #1635 (UNEMPLOYED at birth) was
+put to work with `putToWork`; the Intern's hiring attempt resolved from the first entry's cohort seed
+(roll 4854 < effectiveHireBps 6000 → Hired, employment now EMPLOYED). The keeper sealed the day 20 s after
+it ended, drand delivered the seed ~90 s later and the epoch finalized about 2.5 minutes after day end;
+`claimStock([1,2])` paid the beneficiary 120 sats. Council delay is 5 minutes on testnet. Blockscout
+verification of the four default-profile r6 contracts is still pending (WorkRegistry, compiled via-IR,
+is verified).
