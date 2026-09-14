@@ -99,7 +99,7 @@ dayIdAt, currentDay, isWeekend, weekday, isDst, nextFriday, civil, ordinal`), ba
 | `enrollOpensBefore` | 7 fast days (2 h 48 min) | today's testnet rule "book any published day" |
 | `maxPublishAhead` | 7 | one fast week ahead, as now |
 | `seedDeadline` | 5 min (floor 2 min) | a seed that never lands re-requests in minutes |
-| council `delay` | 5 min (via the delayed `setDelay` self-call; no redeploy) | guarded admin calls testable in a sitting |
+| council `delay` | 5 min (via the delayed `setDelay` self-call; no redeploy) | guarded admin calls testable in a sitting. Mainnet (decided 2026-09-14): 6 hours at launch, raised to 24 hours once funds are meaningful; only guarded calls wait, pause is immediate |
 | drand payroll margin | 90 s (unchanged) | beacon floor; a day ends, seal, seed lands ~2 min later, well inside the next 24-min day |
 | drand vault margin | 15 s (unchanged) | |
 | `RarityConfig.MIN_DELAY` | leave | only catalog switches |
