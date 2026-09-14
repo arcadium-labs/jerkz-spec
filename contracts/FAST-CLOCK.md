@@ -37,12 +37,25 @@ faucet never touch the calendar.
 
 ## 2. Design: one scale factor, one new contract
 
-**Scale everything by 1/60: an hour becomes a minute.** This is the changelog's 60× profile. A game
-day is 24 minutes, an H8 shift is 8 minutes, a week is 2 h 48 min, the 2-day re-apply cooldown is
-48 minutes, the 7-day stale grace is 2 h 48 min. Every relative rule in the spec keeps its ratio, so
-testnet play exercises the same logic mainnet will run. The day length is a deploy parameter for
-flexibility, but anything other than 1,440 s breaks the "8-hour shift = 8 minutes" statement in the
-changelog, so 1,440 s is the profile and other values are for engineering experiments only.
+**The day length is a deploy parameter; two testnet profiles are defined.** Every relative rule in
+the spec is a Payroll day or a fraction of one, so once the calendar shrinks the whole game keeps its
+ratios and testnet play exercises the same logic mainnet will run. Mainnet never gets a parameter:
+production deploys `MarketCalendar` (86,400 s New York days) and nothing else.
+
+| profile | `DAY_SECONDS` | H8 / H16 / H24 / H48 shift | week | re-apply (2 d) | stale grace (7 d) | who asked |
+|---|---|---|---|---|---|---|
+| **fast-60** | 1,440 (24 min) | 8 / 16 / 24 / 48 min | 2 h 48 min | 48 min | 2 h 48 min | changelog's "60× game-clock profile" |
+| **fast-180** | 480 (8 min) | 2:40 / 5:20 / 8 / 16 min | 56 min | 16 min | 56 min | Scott: "we want 8 minute day as an option for testnet" |
+
+Both are testnet only. fast-60 is the one the team's changelog describes and the one the PRD
+amendment in §7 should name; fast-180 is a faster iteration setting for engineering and QA sessions
+where a full week of game days should fit in an hour. Switching profiles is a redeploy of the four
+calendar-holding contracts (the calendar is immutable in them), so pick one per testnet reset.
+
+What does not shrink with the day (see §2.3): drand needs ~90 s after a day ends before the payroll
+seed exists, so settlement is ~6% of a fast-60 day and ~19% of a fast-180 day; the council timelock
+and block finality are real time. Both profiles remain workable; fast-180 just makes those waits
+visible, which the changelog asks the app to disclose anyway.
 
 ### 2.1 `src/testnet/FastCalendar.sol` (new, testnet only)
 
@@ -79,7 +92,7 @@ dayIdAt, currentDay, isWeekend, weekday, isDst, nextFriday, civil, ordinal`), ba
 
 | setting | value | why |
 |---|---|---|
-| `daySeconds` | 1,440 s (24 min); alt 480 s (8 min) | 1/60 scale |
+| `daySeconds` | 1,440 s (fast-60) or 480 s (fast-180) | per-reset choice, testnet only |
 | `enrollOpensBefore` | 7 fast days (2 h 48 min) | today's testnet rule "book any published day" |
 | `maxPublishAhead` | 7 | one fast week ahead, as now |
 | `seedDeadline` | 5 min (floor 2 min) | a seed that never lands re-requests in minutes |
@@ -89,8 +102,8 @@ dayIdAt, currentDay, isWeekend, weekday, isDst, nextFriday, civil, ordinal`), ba
 | `RarityConfig.MIN_DELAY` | leave | only catalog switches |
 | faucet cooldown | 60 s (unchanged) | |
 
-At 24-minute days the drand-timed payroll settlement takes about 10% of a day; at 8-minute days it
-is 25%, still workable, but the enrol window and the human pace get tight. Recommend 24.
+Under fast-180 the spec's 1-hour enrol window would be 20 s, so testnet keeps "book any published
+day" (`enrollOpensBefore` = 7 fast days) under either profile.
 
 ### 2.4 Keeper (`jerkz-keeper`)
 
@@ -154,8 +167,10 @@ v0.21 rollout avoids a second reset.
 
 ## 5. Open choices for Scott
 
+- Which profile for the next testnet reset: fast-60 (24-min day) or fast-180 (8-min day). Both stay
+  supported; a later reset can switch.
 - Keep `enrollOpensBefore` at a full fast week (book any published day, today's testnet rule) or use
-  the spec's 1 hour → 1 minute, which is too tight for humans.
+  the spec's 1 hour scaled (1 min / 20 s), which is too tight for humans.
 - Whether to ship this together with spec v0.21 (recommended) or as a separate reset first.
 - Whether AKLO adopts the §7 text as the PRD amendment the changelog says is still needed.
 
@@ -164,7 +179,7 @@ v0.21 rollout avoids a second reset.
 | changelog requirement | where this plan meets it |
 |---|---|
 | "Separate 60× game-clock profile" | one deploy profile (`FAST_CLOCK=1`, `DAY_SECONDS=1440`) deploying `FastCalendar`; mainnet profile deploys `MarketCalendar` unchanged (§2.1, §2.3) |
-| "8/16/24/48-hour shifts become 8/16/24/48 minutes" | shift length = day/3, 2·day/3, 1 day, 2 days of a 1,440 s day = 8/16/24/48 min (§2.2 item 1) |
+| "8/16/24/48-hour shifts become 8/16/24/48 minutes" | fast-60: shift length = day/3, 2·day/3, 1 day, 2 days of a 1,440 s day = 8/16/24/48 min (§2.2 item 1). fast-180 (8-min day) is a testnet-only extra beyond the changelog row, same ratios, three times faster; the PRD is a mainnet document and does not need to name it |
 | "Apply one clock consistently to starts, cooldowns, weekends and Payroll scheduling" | every day-keyed rule reads the calendar; the three second-based rules (shift seconds, stale grace, seed-deadline floor) are re-expressed through it; the keeper's publish rule becomes calendar-driven (§2.2, §2.4) |
 | "Keep production timing unchanged" | `MarketCalendarLib`/`MarketCalendar` and the NY fixture untouched; the production tweaks are identities on an 86,400 s day (§2.2) |
 | "Disclose real network/randomness waits" | drand margins (15 s vault, 90 s payroll/gacha) and `PUBLISH_SLACK` do not scale; the UI and `/status` must say "settles about 2 minutes after the day ends (drand)" rather than implying instant settlement; council delay 5 min is a real wait too (§2.3, §2.5) |
